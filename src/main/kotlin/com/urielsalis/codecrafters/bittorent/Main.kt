@@ -24,6 +24,9 @@ fun runInfoCommand(args: Array<String>) {
     println("Tracker URL: ${metaInfo.announce}")
     println("Length: ${metaInfo.fileLength}")
     println("Info Hash: ${metaInfo.infoHash.toHexString()}")
+    println("Piece Length: ${metaInfo.pieceLength}")
+    println("Piece Hashes:")
+    metaInfo.pieces.forEach { println(it.toHexString()) }
 }
 
 fun runDecodeCommand(args: Array<String>) {

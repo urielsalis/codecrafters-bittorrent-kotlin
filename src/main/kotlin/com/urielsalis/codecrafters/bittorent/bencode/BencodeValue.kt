@@ -18,6 +18,7 @@ class StringBencodeValue(val value: ByteArray) : BencodeValue {
 class IntegerBencodeValue(val value: BigInteger) : BencodeValue {
     override fun toJson(): String = gson.toJson(value)
     fun asInt(): Int = value.toInt()
+    fun asLong(): Long = value.toLong()
 }
 
 class ListBencodeValue(val values: List<BencodeValue>) : BencodeValue {
@@ -28,6 +29,13 @@ class DictionaryBencodeValue(val values: Map<ByteArray, BencodeValue>) : Bencode
     override fun toJson(): String =
         '{' + values.map { "\"${it.key.toString(Charset.defaultCharset())}\":${it.value.toJson()}" }
             .joinToString(",") + '}'
+
+    // FIXME: ByteArray doesn't have equals so its annoying to use as key.
+    //  Change to a value class once they support overriding equals
+    operator fun get(key: ByteArray): BencodeValue? =
+        values.entries.firstOrNull { it.key.contentEquals(key) }?.value
+
+    operator fun get(key: String): BencodeValue? = get(key.toByteArray())
 }
 
 fun ByteArray.toBencodeValue() = StringBencodeValue(this)

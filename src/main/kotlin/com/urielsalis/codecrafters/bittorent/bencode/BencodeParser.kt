@@ -1,14 +1,17 @@
 package com.urielsalis.codecrafters.bittorent.bencode
 
+import com.urielsalis.codecrafters.bittorent.InvalidDictionaryKey
 import com.urielsalis.codecrafters.bittorent.ParserException
 import com.urielsalis.codecrafters.bittorent.skip
 import com.urielsalis.codecrafters.bittorent.toBigInteger
+import sun.security.pkcs.ParsingException
 import java.math.BigInteger.TEN
 import java.math.BigInteger.ZERO
 import java.nio.charset.Charset
 
 const val INTEGER_TAG = 'i'
 const val LIST_TAG = 'l'
+const val DICTIONARY_TAG = 'd'
 const val END_STRING_TAG = ':'.code.toByte()
 const val END_TAG_TAG = 'e'.code.toByte()
 const val NEGATIVE_TAG = '-'.code.toByte()
@@ -23,8 +26,24 @@ class BencodeParser {
             in '1'..'9' -> parseString(bencodeValue)
             INTEGER_TAG -> parseInteger(bencodeValue)
             LIST_TAG -> parseList(bencodeValue)
+            DICTIONARY_TAG -> parseDict(bencodeValue)
             else -> throw ParserException("Unknown type ${bencodeValue[0]}")
         }
+    }
+
+    private fun parseDict(bencodeValue: ByteArray): Pair<BencodeValue, ByteArray> {
+        val values = mutableMapOf<ByteArray, BencodeValue>()
+        var currentBencodeValue = bencodeValue.skip(1)
+        while (currentBencodeValue[0] != END_TAG_TAG) {
+            val (key, newBencodeValue) = parseNext(currentBencodeValue)
+            if (key !is StringBencodeValue) {
+                throw InvalidDictionaryKey(key)
+            }
+            val (value, newBencodeValue2) = parseNext(newBencodeValue)
+            values[key.value] = value
+            currentBencodeValue = newBencodeValue2
+        }
+        return values.toBencodeValue() to currentBencodeValue.skip(1)
     }
 
     private fun parseList(bencodeValue: ByteArray): Pair<ListBencodeValue, ByteArray> {

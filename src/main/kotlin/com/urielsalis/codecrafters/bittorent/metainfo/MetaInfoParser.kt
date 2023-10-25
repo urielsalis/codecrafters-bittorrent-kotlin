@@ -3,6 +3,7 @@ package com.urielsalis.codecrafters.bittorent.metainfo
 import com.urielsalis.codecrafters.bittorent.InvalidMetaInfoFileException
 import com.urielsalis.codecrafters.bittorent.MismatchedTypeException
 import com.urielsalis.codecrafters.bittorent.ParserException
+import com.urielsalis.codecrafters.bittorent.asType
 import com.urielsalis.codecrafters.bittorent.bencode.*
 import java.io.File
 import java.security.MessageDigest
@@ -37,11 +38,5 @@ object MetaInfoParser {
             pieceLength.asInt(),
             pieces
         )
-    }
-
-    private inline fun <reified T : BencodeValue> BencodeValue.asType(): T = if (this !is T) {
-        throw MismatchedTypeException(T::class, this)
-    } else {
-        this
     }
 }

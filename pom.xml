@@ -23,6 +23,28 @@
             <url>https://repo1.maven.org/maven2/</url>
         </repository>
     </repositories>
+    <dependencies>
+        <dependency>
+            <groupId>org.jetbrains.kotlin</groupId>
+            <artifactId>kotlin-stdlib</artifactId>
+            <version>1.9.10</version>
+        </dependency>
+        <dependency>
+            <groupId>com.google.code.gson</groupId>
+            <artifactId>gson</artifactId>
+            <version>2.10.1</version>
+        </dependency>
+        <dependency>
+            <groupId>com.dampcake</groupId>
+            <artifactId>bencode</artifactId>
+            <version>1.4.1</version>
+        </dependency>
+        <dependency>
+            <artifactId>commons-codec</artifactId>
+            <groupId>commons-codec</groupId>
+            <version>1.15</version>
+        </dependency>
+    </dependencies>
 
     <build>
         <sourceDirectory>src/main/kotlin</sourceDirectory>
@@ -72,23 +94,5 @@
             </plugin>
         </plugins>
     </build>
-
-    <dependencies>
-        <dependency>
-            <groupId>org.jetbrains.kotlin</groupId>
-            <artifactId>kotlin-stdlib</artifactId>
-            <version>1.9.10</version>
-        </dependency>
-        <dependency>
-            <groupId>com.google.code.gson</groupId>
-            <artifactId>gson</artifactId>
-            <version>2.10.1</version>
-        </dependency>
-        <dependency>
-            <groupId>com.dampcake</groupId>
-            <artifactId>bencode</artifactId>
-            <version>1.4.1</version>
-        </dependency>
-    </dependencies>
 
 </project>

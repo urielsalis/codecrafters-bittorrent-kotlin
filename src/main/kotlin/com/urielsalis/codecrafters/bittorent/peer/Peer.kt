@@ -6,11 +6,14 @@ import java.net.InetAddress
 import java.net.InetSocketAddress
 
 data class Peer(val socket: InetSocketAddress) {
+    constructor(inetAddress: InetAddress, port: Int) : this(InetSocketAddress(inetAddress, port))
     constructor(byteArray: ByteArray) : this(
-        InetSocketAddress(
-            InetAddress.getByAddress(byteArray.copyOf(4)),
-            byteArray.skip(4).toShort().toInt() and 0xffff
-        )
+        InetAddress.getByAddress(byteArray.copyOf(4)),
+        byteArray.skip(4).toShort().toInt() and 0xffff
+    )
+
+    constructor(peer: String) : this(
+        InetAddress.getByName(peer.substringBefore(':')), peer.substringAfter(':').toInt()
     )
 }
 

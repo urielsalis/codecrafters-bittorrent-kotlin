@@ -4,6 +4,8 @@ package com.urielsalis.codecrafters.bittorent
 
 import com.urielsalis.codecrafters.bittorent.bencode.BencodeParser
 import com.urielsalis.codecrafters.bittorent.metainfo.MetaInfoParser
+import com.urielsalis.codecrafters.bittorent.peer.Peer
+import com.urielsalis.codecrafters.bittorent.peer.PeerConnection
 import com.urielsalis.codecrafters.bittorent.peer.TrackerManager
 
 fun main(args: Array<String>) {
@@ -13,11 +15,20 @@ fun main(args: Array<String>) {
             "decode" -> return runDecodeCommand(args)
             "info" -> return runInfoCommand(args)
             "peers" -> return runPeersCommand(args)
+            "handshake" -> return runHandshakeCommand(args)
             else -> println("Unknown command $command")
         }
     } catch (e: RuntimeException) {
         e.printStackTrace()
     }
+}
+
+fun runHandshakeCommand(args: Array<String>) {
+    val metainfoFile = args[1]
+    val peer = args[2]
+    val metaInfo = MetaInfoParser.parse(metainfoFile)
+    val conn = PeerConnection(Peer(peer))
+    println("Peer ID: ${conn.handshake(metaInfo).toHexString()}")
 }
 
 fun runPeersCommand(args: Array<String>) {

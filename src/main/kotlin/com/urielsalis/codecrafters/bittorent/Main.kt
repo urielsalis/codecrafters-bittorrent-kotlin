@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalStdlibApi::class) // FIXME: remove when .toHexString() is no longer experimental
+
 package com.urielsalis.codecrafters.bittorent
 
 import com.urielsalis.codecrafters.bittorent.bencode.BencodeParser
@@ -21,6 +23,7 @@ fun runInfoCommand(args: Array<String>) {
     val metaInfo = MetaInfoParser.parse(metainfoFile)
     println("Tracker URL: ${metaInfo.announce}")
     println("Length: ${metaInfo.fileLength}")
+    println("Info Hash: ${metaInfo.infoHash.toHexString()}")
 }
 
 fun runDecodeCommand(args: Array<String>) {

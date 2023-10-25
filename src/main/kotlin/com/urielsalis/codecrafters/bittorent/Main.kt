@@ -17,6 +17,6 @@ fun main(args: Array<String>) {
 fun runDecodeCommand(args: Array<String>) {
     val bencodeParser = BencodeParser()
     val bencodedValue = args[1]
-    val decoded = bencodeParser.parseNext(bencodedValue)
+    val decoded = bencodeParser.parseNext(bencodedValue).first
     println(decoded.toJson())
 }

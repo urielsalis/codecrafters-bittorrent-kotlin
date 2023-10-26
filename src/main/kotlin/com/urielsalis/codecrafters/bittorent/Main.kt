@@ -19,11 +19,25 @@ fun main(args: Array<String>) {
             "peers" -> return runPeersCommand(args)
             "handshake" -> return runHandshakeCommand(args)
             "download_piece" -> return runDownloadPiece(args)
+            "download" -> return runDownload(args)
             else -> println("Unknown command $command")
         }
     } catch (e: RuntimeException) {
         e.printStackTrace()
     }
+}
+
+fun runDownload(args: Array<String>) {
+    val outputFilename = args[2]
+    val metaInfoFile = args[3]
+    val metaInfo = MetaInfoParser.parse(metaInfoFile)
+    val peers = TrackerManager.getPeers(metaInfo)
+    val connectionManager = ConnectionManager(metaInfo, peers)
+    connectionManager.connect()
+    connectionManager.requestAllPieces()
+    connectionManager.download()
+    connectionManager.writeToFile(outputFilename)
+    println("Downloaded $metaInfoFile to $outputFilename.")
 }
 
 fun runDownloadPiece(args: Array<String>) {

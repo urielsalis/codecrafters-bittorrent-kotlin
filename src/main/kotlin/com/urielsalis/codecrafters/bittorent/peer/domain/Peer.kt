@@ -1,4 +1,4 @@
-package com.urielsalis.codecrafters.bittorent.peer
+package com.urielsalis.codecrafters.bittorent.peer.domain
 
 import com.urielsalis.codecrafters.bittorent.skip
 import com.urielsalis.codecrafters.bittorent.toShort

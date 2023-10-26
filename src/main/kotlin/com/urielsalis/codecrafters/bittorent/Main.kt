@@ -4,9 +4,11 @@ package com.urielsalis.codecrafters.bittorent
 
 import com.urielsalis.codecrafters.bittorent.bencode.BencodeParser
 import com.urielsalis.codecrafters.bittorent.metainfo.MetaInfoParser
-import com.urielsalis.codecrafters.bittorent.peer.Peer
+import com.urielsalis.codecrafters.bittorent.peer.ConnectionManager
+import com.urielsalis.codecrafters.bittorent.peer.domain.Peer
 import com.urielsalis.codecrafters.bittorent.peer.PeerConnection
 import com.urielsalis.codecrafters.bittorent.peer.TrackerManager
+import java.io.File
 
 fun main(args: Array<String>) {
     val command = args[0]
@@ -16,11 +18,28 @@ fun main(args: Array<String>) {
             "info" -> return runInfoCommand(args)
             "peers" -> return runPeersCommand(args)
             "handshake" -> return runHandshakeCommand(args)
+            "download_piece" -> return runDownloadPiece(args)
             else -> println("Unknown command $command")
         }
     } catch (e: RuntimeException) {
         e.printStackTrace()
     }
+}
+
+fun runDownloadPiece(args: Array<String>) {
+    val outputFilename = args[2]
+    val metaInfoFile = args[3]
+    val pieceNumber = args[4].toInt()
+    val metaInfo = MetaInfoParser.parse(metaInfoFile)
+    val peers = TrackerManager.getPeers(metaInfo)
+    val connectionManager = ConnectionManager(metaInfo, peers)
+    connectionManager.connect()
+    connectionManager.requestPiece(pieceNumber)
+    connectionManager.download()
+    val piece = connectionManager.getPiece(pieceNumber)
+    val file = File(outputFilename)
+    file.writeBytes(piece)
+    println("Piece $pieceNumber downloaded to $outputFilename.")
 }
 
 fun runHandshakeCommand(args: Array<String>) {

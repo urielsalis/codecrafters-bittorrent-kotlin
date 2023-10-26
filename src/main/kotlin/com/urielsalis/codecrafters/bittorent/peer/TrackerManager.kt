@@ -6,6 +6,7 @@ import com.urielsalis.codecrafters.bittorent.bencode.BencodeParser
 import com.urielsalis.codecrafters.bittorent.bencode.DictionaryBencodeValue
 import com.urielsalis.codecrafters.bittorent.bencode.StringBencodeValue
 import com.urielsalis.codecrafters.bittorent.metainfo.MetaInfo
+import com.urielsalis.codecrafters.bittorent.peer.domain.Peer
 import org.apache.commons.codec.net.URLCodec
 import java.net.HttpURLConnection
 import java.net.URL

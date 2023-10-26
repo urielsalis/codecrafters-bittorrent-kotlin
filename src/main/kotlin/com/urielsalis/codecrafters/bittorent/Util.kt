@@ -12,6 +12,13 @@ fun ByteArray.toShort(order: ByteOrder = ByteOrder.BIG_ENDIAN): Short =
 fun ByteArray.toInt(order: ByteOrder = ByteOrder.BIG_ENDIAN): Int =
     ByteBuffer.wrap(this).order(order).getInt()
 
+fun ByteBuffer.toArray(): ByteArray {
+    val buf = this.duplicate().rewind() as ByteBuffer
+    val ret = ByteArray(buf.remaining())
+    buf.get(ret)
+    return ret
+}
+
 inline fun <reified T : BencodeValue> BencodeValue.asType(): T = if (this !is T) {
     throw MismatchedTypeException(T::class, this)
 } else {

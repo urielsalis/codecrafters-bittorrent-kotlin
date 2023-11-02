@@ -14,5 +14,12 @@ class StringBencodeValue(val value: ByteArray) : BencodeValue {
     fun asString(): String = value.toString(Charset.defaultCharset())
 }
 
+class IntegerBencodeValue(val value: BigInteger) : BencodeValue {
+    override fun toJson(): String = gson.toJson(value)
+    fun asInt(): Int = value.toInt()
+}
+
 fun ByteArray.toBencodeValue() = StringBencodeValue(this)
 fun String.toBencodeValue() = StringBencodeValue(this.toByteArray())
+fun BigInteger.toBencodeValue() = IntegerBencodeValue(this)
+fun Int.toBencodeValue() = IntegerBencodeValue(this.toBigInteger())

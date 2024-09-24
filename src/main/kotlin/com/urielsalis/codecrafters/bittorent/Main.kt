@@ -3,6 +3,7 @@
 package com.urielsalis.codecrafters.bittorent
 
 import com.urielsalis.codecrafters.bittorent.bencode.BencodeParser
+import com.urielsalis.codecrafters.bittorent.magnet.MagnetParser
 import com.urielsalis.codecrafters.bittorent.metainfo.MetaInfoParser
 import com.urielsalis.codecrafters.bittorent.peer.ConnectionManager
 import com.urielsalis.codecrafters.bittorent.peer.domain.Peer
@@ -20,6 +21,7 @@ fun main(args: Array<String>) {
             "handshake" -> return runHandshakeCommand(args)
             "download_piece" -> return runDownloadPiece(args)
             "download" -> return runDownload(args)
+            "magnet_parse" -> return parseMagnet(args)
             else -> println("Unknown command $command")
         }
     } catch (e: RuntimeException) {
@@ -86,4 +88,11 @@ fun runDecodeCommand(args: Array<String>) {
     val bencodedValue = args[1]
     val decoded = BencodeParser.parseNext(bencodedValue).first
     println(decoded.toJson())
+}
+
+fun parseMagnet(args: Array<String>) {
+    val magnet = args[1]
+    val magnetInfo = MagnetParser.parse(magnet)
+    println("Tracker URL: ${magnetInfo.trackerUrl}")
+    println("Info Hash: ${magnetInfo.infoHash}")
 }

@@ -25,6 +25,7 @@ fun main(args: Array<String>) {
             "magnet_parse" -> return parseMagnet(args)
             "magnet_handshake" -> return magnetHandshake(args)
             "magnet_info" -> return runMagnetInfo(args)
+            "magnet_download_piece" -> runMagnetDownloadPiece(args)
             else -> println("Unknown command $command")
         }
     } catch (e: RuntimeException) {
@@ -122,5 +123,21 @@ fun runMagnetInfo(args: Array<String>) {
     println("Piece Length: ${connection.pieceLength}")
     println("Piece Hashes:")
     connection.pieces.forEach { println(it.toHexString()) }
+}
+
+fun runMagnetDownloadPiece(args: Array<String>) {
+    val outputFilename = args[2]
+    val magnet = args[3]
+    val pieceNumber = args[4].toInt()
+    val magnetInfo = MagnetParser.parse(magnet)
+    val peers = TrackerManager.getPeers(magnetInfo)
+    val connectionManager = ConnectionManager(Hex.decodeHex(magnetInfo.infoHash), peers, null)
+    connectionManager.markInterested()
+    connectionManager.requestPiece(pieceNumber)
+    connectionManager.download()
+    val piece = connectionManager.getPiece(pieceNumber)
+    val file = File(outputFilename)
+    file.writeBytes(piece)
+    println("Piece $pieceNumber downloaded to $outputFilename.")
 }
 

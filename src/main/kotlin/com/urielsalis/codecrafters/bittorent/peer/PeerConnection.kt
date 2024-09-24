@@ -4,6 +4,7 @@ import com.urielsalis.codecrafters.bittorent.ParserException
 import com.urielsalis.codecrafters.bittorent.bencode.BencodeParser
 import com.urielsalis.codecrafters.bittorent.bencode.DictionaryBencodeValue
 import com.urielsalis.codecrafters.bittorent.bencode.IntegerBencodeValue
+import com.urielsalis.codecrafters.bittorent.magnet.MagnetMetadata
 import com.urielsalis.codecrafters.bittorent.peer.domain.Peer
 import com.urielsalis.codecrafters.bittorent.peer.domain.PeerPartialPieceRequest
 import com.urielsalis.codecrafters.bittorent.peer.domain.PeerPartialPieceResponse
@@ -33,7 +34,6 @@ class PeerConnection(peer: Peer) {
     }
 
     fun handshake(infoHash: ByteArray): ByteArray {
-        // Send handshake
         val handshake =
             byteArrayOf(19) + "BitTorrent protocol".toByteArray() + supportedExtensions + infoHash + "00112233445566778899".toByteArray()
         socket.getOutputStream().write(handshake);
@@ -168,6 +168,24 @@ class PeerConnection(peer: Peer) {
         )
         saveResponse(response)
         requestsInFlight--
+    }
+
+    fun requestMetadata(): MagnetMetadata {
+        val dict = BencodeParser.toBencode(
+            DictionaryBencodeValue(
+                mapOf(
+                    "msg_type".toByteArray() to IntegerBencodeValue(BigInteger.valueOf(0)),
+                    "piece".toByteArray() to IntegerBencodeValue(BigInteger.valueOf(0))
+                )
+            )
+        )
+        sendMessage(
+            PeerMessage(
+                PeerMessageType.EXTENDED, byteArrayOf(metadataExtensionId.toByte()) + dict
+            )
+        )
+        // TODO get response
+        return MagnetMetadata(0, 0, listOf())
     }
 }
 

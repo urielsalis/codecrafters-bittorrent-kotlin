@@ -10,22 +10,41 @@ import kotlin.concurrent.thread
 
 private const val MAX_PARTIAL_PIECE_LENGTH = 16384 // 2^14
 
-class ConnectionManager(val metaInfo: MetaInfo, peers: List<Peer>) {
+class ConnectionManager(
+    val infoHash: ByteArray,
+    peers: List<Peer>,
+    val metaInfo: MetaInfo?
+) {
     val connections: Map<Int, PeerConnection>
     val workQueue = mutableListOf<PeerPartialPieceRequest>()
     val receivedPieces = mutableListOf<PeerPartialPieceResponse>()
     val lock = Any()
+    val fileLength: Long
+    val pieceLength: Int
+    val pieces: List<ByteArray>
+
 
     init {
         connections = peers.mapIndexed { i, peer -> i to PeerConnection(peer) }.toMap()
+        connections.values.forEach {
+            it.handshake(infoHash)
+            it.initConnection()
+        }
+        if (metaInfo != null) {
+            fileLength = metaInfo.fileLength
+            pieceLength = metaInfo.pieceLength
+            pieces = metaInfo.pieces
+        } else {
+            val metadataPeer = connections.values.first()
+            val metadata = metadataPeer.requestMetadata()
+            fileLength = metadata.fileLength
+            pieceLength = metadata.pieceLength
+            pieces = metadata.pieces
+        }
     }
 
-    fun connect() {
-        connections.values.forEach {
-            it.handshake(metaInfo.infoHash)
-            it.initConnection()
-            it.markInterested()
-        }
+    fun markInterested() {
+        connections.values.forEach { it.markInterested() }
     }
 
     fun requestPiece(pieceNumber: Int) {
@@ -33,7 +52,7 @@ class ConnectionManager(val metaInfo: MetaInfo, peers: List<Peer>) {
     }
 
     fun requestAllPieces() {
-        for (i in 0 until metaInfo.pieces.size) {
+        for (i in pieces.indices) {
             requestPiece(i)
         }
     }
@@ -66,7 +85,7 @@ class ConnectionManager(val metaInfo: MetaInfo, peers: List<Peer>) {
 
     fun writeToFile(fileName: String) {
         val out = FileOutputStream(fileName)
-        for (i in 0 until metaInfo.pieces.size) {
+        for (i in pieces.indices) {
             val bytes = getPiece(i)
             out.write(bytes)
         }
@@ -99,16 +118,16 @@ class ConnectionManager(val metaInfo: MetaInfo, peers: List<Peer>) {
     }
 
     private fun getLengthOfPiece(pieceNumber: Int): Int = if (isLastPiece(pieceNumber)) {
-        val remainder = metaInfo.fileLength % metaInfo.pieceLength
+        val remainder = fileLength % pieceLength
         if (remainder == 0L) {
-            metaInfo.pieceLength
+            pieceLength
         } else {
             remainder.toInt()
         }
     } else {
-        metaInfo.pieceLength
+        pieceLength
     }
 
-    private fun isLastPiece(pieceNumber: Int) = pieceNumber == metaInfo.pieces.size - 1
+    private fun isLastPiece(pieceNumber: Int) = pieceNumber == pieces.size - 1
 
 }

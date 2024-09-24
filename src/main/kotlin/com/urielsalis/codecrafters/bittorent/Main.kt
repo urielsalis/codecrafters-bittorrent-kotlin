@@ -24,6 +24,7 @@ fun main(args: Array<String>) {
             "download" -> return runDownload(args)
             "magnet_parse" -> return parseMagnet(args)
             "magnet_handshake" -> return magnetHandshake(args)
+            "magnet_info" -> return runMagnetInfo(args)
             else -> println("Unknown command $command")
         }
     } catch (e: RuntimeException) {
@@ -36,8 +37,8 @@ fun runDownload(args: Array<String>) {
     val metaInfoFile = args[3]
     val metaInfo = MetaInfoParser.parse(metaInfoFile)
     val peers = TrackerManager.getPeers(metaInfo)
-    val connectionManager = ConnectionManager(metaInfo, peers)
-    connectionManager.connect()
+    val connectionManager = ConnectionManager(metaInfo.infoHash, peers, metaInfo)
+    connectionManager.markInterested()
     connectionManager.requestAllPieces()
     connectionManager.download()
     connectionManager.writeToFile(outputFilename)
@@ -50,8 +51,8 @@ fun runDownloadPiece(args: Array<String>) {
     val pieceNumber = args[4].toInt()
     val metaInfo = MetaInfoParser.parse(metaInfoFile)
     val peers = TrackerManager.getPeers(metaInfo)
-    val connectionManager = ConnectionManager(metaInfo, peers)
-    connectionManager.connect()
+    val connectionManager = ConnectionManager(metaInfo.infoHash, peers, metaInfo)
+    connectionManager.markInterested()
     connectionManager.requestPiece(pieceNumber)
     connectionManager.download()
     val piece = connectionManager.getPiece(pieceNumber)
@@ -109,3 +110,12 @@ fun magnetHandshake(args: Array<String>) {
     println("Peer ID: ${peerId.toHexString()}")
     println("Peer Metadata Extension ID: ${connection.metadataExtensionId}")
 }
+
+fun runMagnetInfo(args: Array<String>) {
+    val magnet = args[1]
+    val magnetInfo = MagnetParser.parse(magnet)
+    val peers = TrackerManager.getPeers(magnetInfo)
+    val connection = ConnectionManager(Hex.decodeHex(magnetInfo.infoHash), peers, null)
+    // TODO print metadata
+}
+

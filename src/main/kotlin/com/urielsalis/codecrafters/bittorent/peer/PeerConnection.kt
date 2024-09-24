@@ -124,8 +124,8 @@ class PeerConnection(peer: Peer) {
     }
 
     private fun sendMessage(message: PeerMessage) {
-        val length = 4 + 1 + message.payload.size
-        val buffer = ByteBuffer.allocate(length).order(ByteOrder.BIG_ENDIAN).putInt(length)
+        val length = 1 + message.payload.size
+        val buffer = ByteBuffer.allocate(4 + length).order(ByteOrder.BIG_ENDIAN).putInt(length)
             .put(message.type.protocolType.toByte()) // Request
             .put(message.payload)
         val out = socket.getOutputStream()

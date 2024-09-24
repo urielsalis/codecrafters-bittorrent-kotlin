@@ -4,6 +4,7 @@ import com.urielsalis.codecrafters.bittorent.ParserException
 import com.urielsalis.codecrafters.bittorent.bencode.BencodeParser
 import com.urielsalis.codecrafters.bittorent.bencode.DictionaryBencodeValue
 import com.urielsalis.codecrafters.bittorent.bencode.IntegerBencodeValue
+import com.urielsalis.codecrafters.bittorent.bencode.StringBencodeValue
 import com.urielsalis.codecrafters.bittorent.magnet.MagnetMetadata
 import com.urielsalis.codecrafters.bittorent.peer.domain.Peer
 import com.urielsalis.codecrafters.bittorent.peer.domain.PeerPartialPieceRequest
@@ -76,7 +77,6 @@ class PeerConnection(peer: Peer) {
             )
         )
         val message = PeerMessage(PeerMessageType.EXTENDED, byteArrayOf(0) + dict)
-        println("Sending message $message")
         sendMessage(message)
         val response = waitFor(PeerMessageType.EXTENDED)
         val dictResponse =
@@ -184,8 +184,14 @@ class PeerConnection(peer: Peer) {
                 PeerMessageType.EXTENDED, byteArrayOf(metadataExtensionId.toByte()) + dict
             )
         )
-        // TODO get response
-        return MagnetMetadata(0, 0, listOf())
+        val response = waitFor(PeerMessageType.EXTENDED)
+        val (_, rest) = BencodeParser.parseNext(response.payload.skip(1))
+        val metadata = BencodeParser.parseNext(rest).first as DictionaryBencodeValue
+        val fileLength = (metadata.get("length") as IntegerBencodeValue).value.toLong()
+        val pieceLength = (metadata.get("piece length") as IntegerBencodeValue).value.toInt()
+        val pieces = (metadata.get("pieces") as StringBencodeValue).value.toList()
+            .chunked(20) { it.toByteArray() }
+        return MagnetMetadata(fileLength, pieceLength, pieces)
     }
 }
 

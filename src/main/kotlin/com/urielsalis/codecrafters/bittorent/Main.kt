@@ -116,6 +116,11 @@ fun runMagnetInfo(args: Array<String>) {
     val magnetInfo = MagnetParser.parse(magnet)
     val peers = TrackerManager.getPeers(magnetInfo)
     val connection = ConnectionManager(Hex.decodeHex(magnetInfo.infoHash), peers, null)
-    // TODO print metadata
+    println("Tracker URL: ${magnetInfo.trackerUrl}")
+    println("Length: ${connection.fileLength}")
+    println("Info Hash: ${magnetInfo.infoHash}")
+    println("Piece Length: ${connection.pieceLength}")
+    println("Piece Hashes:")
+    connection.pieces.forEach { println(it.toHexString()) }
 }
 

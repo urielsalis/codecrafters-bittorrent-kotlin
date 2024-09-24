@@ -9,6 +9,7 @@ import com.urielsalis.codecrafters.bittorent.peer.ConnectionManager
 import com.urielsalis.codecrafters.bittorent.peer.domain.Peer
 import com.urielsalis.codecrafters.bittorent.peer.PeerConnection
 import com.urielsalis.codecrafters.bittorent.peer.TrackerManager
+import org.apache.commons.codec.binary.Hex
 import java.io.File
 
 fun main(args: Array<String>) {
@@ -22,6 +23,7 @@ fun main(args: Array<String>) {
             "download_piece" -> return runDownloadPiece(args)
             "download" -> return runDownload(args)
             "magnet_parse" -> return parseMagnet(args)
+            "magnet_handshake" -> return magnetHandshake(args)
             else -> println("Unknown command $command")
         }
     } catch (e: RuntimeException) {
@@ -63,7 +65,7 @@ fun runHandshakeCommand(args: Array<String>) {
     val peer = args[2]
     val metaInfo = MetaInfoParser.parse(metainfoFile)
     val conn = PeerConnection(Peer(peer))
-    println("Peer ID: ${conn.handshake(metaInfo).toHexString()}")
+    println("Peer ID: ${conn.handshake(metaInfo.infoHash).toHexString()}")
 }
 
 fun runPeersCommand(args: Array<String>) {
@@ -95,4 +97,15 @@ fun parseMagnet(args: Array<String>) {
     val magnetInfo = MagnetParser.parse(magnet)
     println("Tracker URL: ${magnetInfo.trackerUrl}")
     println("Info Hash: ${magnetInfo.infoHash}")
+}
+
+fun magnetHandshake(args: Array<String>) {
+    val magnet = args[1]
+    val magnetInfo = MagnetParser.parse(magnet)
+    val peers = TrackerManager.getPeers(magnetInfo)
+    val connection = PeerConnection(peers.first())
+    val peerId = connection.handshake(Hex.decodeHex(magnetInfo.infoHash))
+    connection.initConnection()
+    println("Peer ID: ${peerId.toHexString()}")
+    println("Peer Metadata Extension ID: ${connection.metadataExtensionId}")
 }

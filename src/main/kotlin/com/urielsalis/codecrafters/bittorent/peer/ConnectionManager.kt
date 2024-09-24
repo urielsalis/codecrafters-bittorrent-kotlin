@@ -22,8 +22,9 @@ class ConnectionManager(val metaInfo: MetaInfo, peers: List<Peer>) {
 
     fun connect() {
         connections.values.forEach {
-            it.handshake(metaInfo)
+            it.handshake(metaInfo.infoHash)
             it.initConnection()
+            it.markInterested()
         }
     }
 

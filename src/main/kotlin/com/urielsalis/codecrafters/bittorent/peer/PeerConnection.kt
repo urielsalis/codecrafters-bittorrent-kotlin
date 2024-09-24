@@ -1,7 +1,9 @@
 package com.urielsalis.codecrafters.bittorent.peer
 
 import com.urielsalis.codecrafters.bittorent.ParserException
-import com.urielsalis.codecrafters.bittorent.metainfo.MetaInfo
+import com.urielsalis.codecrafters.bittorent.bencode.BencodeParser
+import com.urielsalis.codecrafters.bittorent.bencode.DictionaryBencodeValue
+import com.urielsalis.codecrafters.bittorent.bencode.IntegerBencodeValue
 import com.urielsalis.codecrafters.bittorent.peer.domain.Peer
 import com.urielsalis.codecrafters.bittorent.peer.domain.PeerPartialPieceRequest
 import com.urielsalis.codecrafters.bittorent.peer.domain.PeerPartialPieceResponse
@@ -9,6 +11,7 @@ import com.urielsalis.codecrafters.bittorent.skip
 import com.urielsalis.codecrafters.bittorent.toArray
 import com.urielsalis.codecrafters.bittorent.toInt
 import java.io.DataInputStream
+import java.math.BigInteger
 import java.net.Socket
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
@@ -19,6 +22,9 @@ class PeerConnection(peer: Peer) {
     private val inputStream: DataInputStream
     private var status: PeerStatus = PeerStatus(interested = false, choked = true)
     private var requestsInFlight = 0
+    private var supportedExtensions = byteArrayOf(0, 0, 0, 0, 0, 16, 0, 0)
+    private var hasExtensions = false
+    var metadataExtensionId = -1
 
     init {
         socket = SocketFactory.getDefault().createSocket()
@@ -26,25 +32,59 @@ class PeerConnection(peer: Peer) {
         inputStream = DataInputStream(socket.getInputStream())
     }
 
-    fun handshake(metaInfo: MetaInfo): ByteArray {
+    fun handshake(infoHash: ByteArray): ByteArray {
         // Send handshake
         val handshake =
-            byteArrayOf(19) + "BitTorrent protocol".toByteArray() + ByteArray(8) + metaInfo.infoHash + "00112233445566778899".toByteArray()
+            byteArrayOf(19) + "BitTorrent protocol".toByteArray() + supportedExtensions + infoHash + "00112233445566778899".toByteArray()
         socket.getOutputStream().write(handshake);
 
         val response = ByteArray(68)
         inputStream.readFully(response)
+        val reservedBytes = response.copyOfRange(20, 28)
+        hasExtensions = reservedBytes[5].toInt() and 0x10 == 0x10
         return response.skip(48)
     }
 
     fun initConnection() {
+        waitFor(PeerMessageType.BITFIELD)
+        if (hasExtensions) {
+            sendExtensionHandshake()
+        }
+    }
+
+    fun markInterested() {
         if (!status.interested) {
-            waitFor(PeerMessageType.BITFIELD)
             sendMessage(PeerMessage(PeerMessageType.INTERESTED, ByteArray(0)))
         }
         if (status.choked) {
             waitFor(PeerMessageType.UNCHOKE)
         }
+    }
+
+    private fun sendExtensionHandshake() {
+        val dict = BencodeParser.toBencode(
+            DictionaryBencodeValue(
+                mapOf(
+                    "m".toByteArray() to DictionaryBencodeValue(
+                        mapOf(
+                            "ut_metadata".toByteArray() to IntegerBencodeValue(
+                                BigInteger.valueOf(1L)
+                            ), "ut_pex".toByteArray() to IntegerBencodeValue(BigInteger.valueOf(2L))
+                        )
+                    )
+                )
+            )
+        )
+        val message = PeerMessage(PeerMessageType.EXTENDED, byteArrayOf(0) + dict)
+        println("Sending message $message")
+        sendMessage(message)
+        val response = waitFor(PeerMessageType.EXTENDED)
+        val dictResponse =
+            BencodeParser.parseNext(response.payload.skip(1)).first as DictionaryBencodeValue
+        val m = dictResponse.get("m") as DictionaryBencodeValue
+        val metadata = m.get("ut_metadata") as IntegerBencodeValue
+        metadataExtensionId = metadata.value.toInt()
+
     }
 
     private fun waitFor(type: PeerMessageType): PeerMessage {
@@ -88,7 +128,9 @@ class PeerConnection(peer: Peer) {
         val buffer = ByteBuffer.allocate(length).order(ByteOrder.BIG_ENDIAN).putInt(length)
             .put(message.type.protocolType.toByte()) // Request
             .put(message.payload)
-        socket.getOutputStream().write(buffer.toArray())
+        val out = socket.getOutputStream()
+        out.write(buffer.toArray())
+        out.flush()
     }
 
     fun download(
@@ -133,7 +175,7 @@ private enum class PeerMessageType(val protocolType: Int) {
     KEEP_ALIVE(-1), CHOKE(0), UNCHOKE(1), INTERESTED(2), NOT_INTERESTED(3), HAVE(4), BITFIELD(5), REQUEST(
         6
     ),
-    PIECE(7), CANCEL(8);
+    PIECE(7), CANCEL(8), EXTENDED(20);
 
     companion object {
         fun valueOf(value: Int) = entries.firstOrNull { it.protocolType == value }
